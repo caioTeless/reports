@@ -1,7 +1,5 @@
-import 'package:uuid/uuid.dart';
-
 class DataModel {
-  String? id;
+  int? id;
   String date;
   String name;
   double value;
@@ -19,8 +17,8 @@ class DataModel {
       'name': name,
       'value': value,
     };
-    if (id != null || id == '') {
-      dataMap['id'] = const Uuid().v1();
+    if(id != null){
+      dataMap['id'] = id!;
     }
     return dataMap;
   }
@@ -33,6 +31,4 @@ class DataModel {
       value: dataMap['value'],
     );
   }
-
-
 }

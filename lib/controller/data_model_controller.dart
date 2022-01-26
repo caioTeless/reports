@@ -1,48 +1,68 @@
-import 'dart:math';
-
-import 'package:reports/data/firebase_data.dart';
+import 'package:reports/data/data_model_db.dart';
 import 'package:reports/model/data_model.dart';
 
 class DataModelController {
+  final DataModelDB _dataModelDb;
 
-  final FirebaseData firebaseData;
+  DataModelController(this._dataModelDb);
 
-  DataModelController(this.firebaseData);
-
-  String id = '';
+  int? id;
   String date = '';
   String name = '';
   double value = 0.0;
+  bool loading = false;
+  String deposit = '';
+  List<DataModel> items = [];
 
-  List<dynamic> items = [];
 
   int get length => items.isEmpty ? 0 : items.length;
 
   void setDate(String newDate) => date = newDate;
-  void setName(String newName) => name = newName;
-  void setValue(String newValue) => value = double.parse(newValue);
+  void setName(String? newName) => name = newName!;
+  void setValue(String? newValue) => value = double.parse(newValue!);
 
-  Future setItems() async {
-    var newModel = DataModel(
+  Future readAll() async {
+    loading = true;
+    items = await _dataModelDb.readAll();
+    loading = false;
+  }
+
+  Future saveData() async {
+    final data = DataModel(
       id: id,
       date: date,
       name: name,
       value: value,
     );
-    items.add(newModel.toMap()); 
-    await firebaseData.insertDb(items);
+    if (id == null) {
+      await _dataModelDb.insert(data);
+    } else {
+      await _dataModelDb.update(data);
+    }
   }
 
-  Future readAll(String index) async{
-    firebaseData.reference.child('dataModelDB').child(index);
-    await firebaseData.readData();
+  Future removeData(DataModel dataModel) async {
+    loading = true;
+    await _dataModelDb.delete(dataModel);
+    loading = false;
   }
 
-  Future remove(String index) async{
-    firebaseData.createInstance('dataModelDB/$index');
+  Future removeAll() async {
+    loading = true;
+    await _dataModelDb.deleteAll();
+    loading = false;
   }
 
-  Future update(DataModel dataModel) async{
-    firebaseData.update(dataModel.toMap());
+  double getSumList() {
+    double sum = 0.0;
+    if (items.isNotEmpty) {
+      loading = true;
+      sum = items
+          .map((e) => e.value)
+          .reduce((value, element) => value + element);
+      sum > 0 ? sum : 0;
+      loading = false;
+    }
+    return sum;
   }
 }

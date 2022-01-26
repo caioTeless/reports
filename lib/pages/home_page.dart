@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:reports/controller/data_model_controller.dart';
-import 'package:reports/data/firebase_data.dart';
+import 'package:reports/data/data_model_db.dart';
+import 'package:reports/helpers/app_bar.dart';
+import 'package:reports/widgets/date_input.dart';
+import 'package:reports/widgets/general_button.dart';
+import 'package:reports/widgets/general_input.dart';
 
 class HomePage extends StatefulWidget {
-  // final DatabaseReference ref =
-  //     FirebaseDatabase.instance.ref().child('dataModelDB');
-
-  HomePage({
+  const HomePage({
     Key? key,
   }) : super(key: key);
 
@@ -17,87 +17,64 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _formKey = GlobalKey<FormState>();
+  final _dataModelController = DataModelController(DataModelDB());
   final _dateController = TextEditingController();
-  final _dataModelController = DataModelController(FirebaseData());
-  
-  // final DatabaseReference newReference = FirebaseDatabase.instance.ref('dataModelDB/0/name'); get data
-  // final DatabaseReference newReference = FirebaseDatabase.instance.ref('dataModelDB/0'); update data
-  // final DatabaseReference newReference = FirebaseDatabase.instance.ref('dataModelDB/1'); remove data
-
-  Future _selectDate(BuildContext context) async {
-    await showDatePicker(
-            context: context,
-            initialDate: DateTime.now(),
-            firstDate: DateTime(2022),
-            lastDate: DateTime(2030))
-        .then(
-      (date) {
-        if (date != null) {
-          setState(() {
-            _dateController.text = DateFormat('dd/MM/yyyy').format(date);
-          });
-        }
-      },
-    );
-    var teste = await _dataModelController.readAll(0.toString());
-    print(teste);
-    // await newReference.remove(); remote data
-    // await newReference.update({'name': 'joao'}); update data
-    // DatabaseEvent event = await newReference.once(); get data
-  }
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  final textController = TextEditingController();
+  final numberController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('teste'),
-      ),
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _dateController,
-              readOnly: true,
-              decoration: const InputDecoration(
-                label: Text('Date'),
+      appBar: appBar,
+      body: Center(     
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(40.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  DateInput(
+                      dateController: _dateController,
+                      dataModelController: _dataModelController),
+                  const SizedBox(height: 10),
+                  GeneralInput(
+                    textLabel: 'Nome',
+                    onSaved: _dataModelController.setName,
+                    iconPrefix: Icons.description_outlined,
+                    controller: textController,
+                  ),
+                  const SizedBox(height: 10),
+                  GeneralInput(
+                    textLabel: 'Valor',
+                    onSaved: _dataModelController.setValue,
+                    iconPrefix: Icons.attach_money_outlined,
+                    isNumber: true,
+                    controller: numberController,
+                  ),
+                  const SizedBox(height: 50),
+                  GeneralButton(
+                    onPressed: _saveData,
+                    nameForButton: 'Enviar dados',
+                  ),
+                ],
               ),
-              onTap: () => _selectDate(context),
-              onSaved: (newDate) => _dataModelController.date = newDate!,
             ),
-            TextFormField(
-              decoration: const InputDecoration(
-                label: Text('Name'),
-              ),
-              onSaved: (newName) => _dataModelController.name = newName!,
-            ),
-            TextFormField(
-              decoration: const InputDecoration(
-                label: Text('Value'),
-              ),
-              onSaved: (newValue) =>
-                  _dataModelController.value = double.parse(newValue!),
-            ),
-            ElevatedButton(
-              onPressed: save,
-              child: const Text('Press'),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Future save() async {
+  Future _saveData() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      await _dataModelController.setItems();
-      // await widget.ref.set(_dataModelController.setNewMap());
+      await _dataModelController.saveData();
+      _formKey.currentState!.reset();
+      _dateController.clear();
+      textController.clear();
+      numberController.clear();
     }
+    setState(() {});
   }
 }
